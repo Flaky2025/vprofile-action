@@ -26,10 +26,10 @@ jobs:
 
       - name: Set SonarQube
         uses: warchant/setup-sonar-scanner@v7
-        
+
       - name: SonarQube Scan
         run: sonar-scanner 
-          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} 
+          -Dsonar.host.url=${{ secrets.SONAR_URL }} 
           -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
           -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
@@ -45,5 +45,24 @@ jobs:
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_URL }}
+
+  BUILD_AND_PUBLISH:
+    needs: testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build and Upload image to ECR
+        uses: appleboy/docker-ecr-action@master
+        with:
+          access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          registry: ${{ secrets.REGISTRY }}
+          region: ${{ env.AWS_REGION }}
+          repo: ${{ env.ECR_REPOSITORY }}
+          tags: latest, ${{ github.run_number }}
+          daemon_off: false
+          dockerfile: ./Dockerfile
+          context: ./
 
